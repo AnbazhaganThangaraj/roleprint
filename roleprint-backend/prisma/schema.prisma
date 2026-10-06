@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+// ─── Models ───────────────────────────────────────────────
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  resumes      Resume[]
+  matches      MatchResult[]
+  applications Application[]
+}
+
+// A CV the user uploaded or pasted. A user can keep several versions.
+model Resume {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  title     String
+  text      String
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id])
+  matches   MatchResult[]
+}
+
+// A job description, either pasted by the user or found through search.
+model Job {
+  id           Int           @id @default(autoincrement())
+  title        String
+  company      String
+  location     String?
+  url          String?
+  description  String
+  createdAt    DateTime      @default(now())
+  matches      MatchResult[]
+  applications Application[]
+}
+
+// The score from comparing one resume against one job.
+model MatchResult {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  resumeId      Int
+  jobId         Int
+  score         Int
+  matchedSkills String[]
+  missingSkills String[]
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+  resume        Resume   @relation(fields: [resumeId], references: [id])
+  job           Job      @relation(fields: [jobId], references: [id])
+}
+
+model Application {
+  id        Int               @id @default(autoincrement())
+  userId    Int
+  jobId     Int
+  status    ApplicationStatus @default(SAVED)
+  notes     String?
+  appliedAt DateTime?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  user      User              @relation(fields: [userId], references: [id])
+  job       Job               @relation(fields: [jobId], references: [id])
+}
